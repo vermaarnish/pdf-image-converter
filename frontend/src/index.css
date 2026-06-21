@@ -604,3 +604,99 @@ footer {
     padding: 30px 15px;
   }
 }
+
+/* Converted Images Preview Grid */
+.converted-images-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 10px;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.converted-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.converted-item {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+}
+
+.converted-item:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary-light);
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.15);
+}
+
+.converted-item img {
+  width: 100%;
+  height: 190px;
+  object-fit: contain;
+  background: #14172a;
+  padding: 8px;
+}
+
+.converted-item-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 190px;
+  background: rgba(11, 13, 25, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  backdrop-filter: blur(2px);
+  transition: opacity 0.25s ease;
+  z-index: 2;
+}
+
+.converted-item:hover .converted-item-overlay {
+  opacity: 1;
+}
+
+.download-item-btn {
+  background: var(--primary-gradient);
+  color: var(--text-primary);
+  border: none;
+  font-family: var(--font-family-heading);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.download-item-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(168, 85, 247, 0.4);
+}
+
+.converted-item-footer {
+  padding: 8px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(20, 24, 46, 0.8);
+}

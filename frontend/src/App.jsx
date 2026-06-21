@@ -12,6 +12,7 @@ export default function App() {
   const [statusMessage, setStatusMessage] = useState('');
   const [downloadBlob, setDownloadBlob] = useState(null);
   const [downloadFilename, setDownloadFilename] = useState('');
+  const [convertedImages, setConvertedImages] = useState([]);
 
   const fileInputRef = useRef(null);
 
@@ -97,6 +98,7 @@ export default function App() {
     setStatus('idle');
     setStatusMessage('');
     setDownloadBlob(null);
+    setConvertedImages([]);
   };
 
   const removeImgFile = (index) => {
@@ -112,16 +114,27 @@ export default function App() {
     setStatus('idle');
     setStatusMessage('');
     setDownloadBlob(null);
+    setConvertedImages([]);
   };
 
   const triggerFileSelect = () => {
     fileInputRef.current.click();
   };
 
+  const handleDownloadSingle = (base64, pageNumber) => {
+    const a = document.createElement('a');
+    a.href = base64;
+    a.download = `${pdfFile.name.replace(/\.pdf$/i, '')}_page_${pageNumber}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const handleConvert = async () => {
     setStatus('loading');
     setStatusMessage('Converting your files... Please wait.');
     setDownloadBlob(null);
+    setConvertedImages([]);
 
     try {
       if (activeTab === 'pdfToImg') {
@@ -130,7 +143,8 @@ export default function App() {
         const formData = new FormData();
         formData.append('file', pdfFile);
 
-        const response = await fetch('/api/convert/pdf-to-jpeg', {
+        // Fetch the base64 page images for UI preview and direct downloads
+        const response = await fetch('/api/convert/pdf-to-images-base64', {
           method: 'POST',
           body: formData,
         });
@@ -139,11 +153,36 @@ export default function App() {
           throw new Error(`Server returned error: ${response.statusText}`);
         }
 
-        const blob = await response.blob();
-        setDownloadBlob(blob);
-        setDownloadFilename(`${pdfFile.name.replace(/\.pdf$/i, '')}_images.zip`);
+        const images = await response.json();
+        setConvertedImages(images);
+
+        if (images.length === 1) {
+          // If exactly 1 page, configure the primary download button for direct image download
+          const res = await fetch(images[0]);
+          const blob = await res.blob();
+          setDownloadBlob(blob);
+          setDownloadFilename(`${pdfFile.name.replace(/\.pdf$/i, '')}.jpg`);
+          setStatusMessage('Your PDF has been converted successfully! Click below to download your image.');
+        } else {
+          // If multiple pages, fetch the ZIP in the background for the primary "Download All (ZIP)" button
+          try {
+            const zipResponse = await fetch('/api/convert/pdf-to-jpeg', {
+              method: 'POST',
+              body: formData,
+            });
+            if (zipResponse.ok) {
+              const zipBlob = await zipResponse.ok ? await zipResponse.blob() : null;
+              if (zipBlob) {
+                setDownloadBlob(zipBlob);
+                setDownloadFilename(`${pdfFile.name.replace(/\.pdf$/i, '')}_images.zip`);
+              }
+            }
+          } catch (zipErr) {
+            console.error("ZIP packaging error", zipErr);
+          }
+          setStatusMessage(`Your PDF has been converted to ${images.length} page images! You can download them individually below or grab the full ZIP archive.`);
+        }
         setStatus('success');
-        setStatusMessage('Your PDF has been converted successfully! Click below to download.');
       } else {
         if (imgFiles.length === 0) return;
 
@@ -401,6 +440,33 @@ export default function App() {
             </div>
           )}
         </div>
+
+        {/* Converted PDF Page Images Grid */}
+        {activeTab === 'pdfToImg' && convertedImages.length > 0 && (
+          <div className="converted-images-section">
+            <div className="file-list-header">
+              <span>Converted Page Images ({convertedImages.length})</span>
+            </div>
+            <div className="converted-grid">
+              {convertedImages.map((base64, idx) => (
+                <div key={idx} className="converted-item">
+                  <img src={base64} alt={`Page ${idx + 1}`} />
+                  <div className="converted-item-overlay">
+                    <button className="download-item-btn" onClick={() => handleDownloadSingle(base64, idx + 1)}>
+                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                      </svg>
+                      Download Page
+                    </button>
+                  </div>
+                  <div className="converted-item-footer">
+                    Page {idx + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Feature explanations */}

@@ -81,6 +81,44 @@ public class ConversionController {
     }
 
     /**
+     * Converts a PDF file into a list of base64-encoded JPEG image strings (one per page).
+     */
+    @PostMapping(value = "/pdf-to-images-base64", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> convertPdfToImagesBase64(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            logger.warn("PDF-to-images-base64: Uploaded file is empty");
+            return ResponseEntity.badRequest().body("Uploaded file is empty");
+        }
+
+        logger.info("PDF-to-images-base64: Processing file {}", file.getOriginalFilename());
+
+        try (PDDocument document = Loader.loadPDF(file.getBytes())) {
+            PDFRenderer renderer = new PDFRenderer(document);
+            int pageCount = document.getNumberOfPages();
+            logger.info("PDF-to-images-base64: PDF has {} pages", pageCount);
+
+            List<String> base64Images = new java.util.ArrayList<>();
+
+            for (int i = 0; i < pageCount; i++) {
+                BufferedImage image = renderer.renderImageWithDPI(i, 150);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(image, "jpg", baos);
+                byte[] bytes = baos.toByteArray();
+                String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
+                base64Images.add("data:image/jpeg;base64," + base64);
+            }
+
+            logger.info("PDF-to-images-base64: Successfully generated {} base64 images", pageCount);
+            return ResponseEntity.ok(base64Images);
+
+        } catch (IOException e) {
+            logger.error("PDF-to-images-base64: Error occurred during conversion", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error converting PDF to images: " + e.getMessage());
+        }
+    }
+
+    /**
      * Converts a list of JPEG/PNG images into a single PDF document.
      */
     @PostMapping(value = "/jpeg-to-pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
