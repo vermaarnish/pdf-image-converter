@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build the Spring Boot backend
-FROM maven:3.8.5-openjdk-17 AS backend-builder
+FROM maven:3.9.6-eclipse-temurin-17 AS backend-builder
 WORKDIR /backend
 COPY backend/pom.xml ./
 COPY backend/src ./src
@@ -17,7 +17,7 @@ COPY --from=frontend-builder /frontend/dist ./src/main/resources/static
 RUN mvn clean package -DskipTests
 
 # Stage 3: Run the packaged Spring Boot application
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=backend-builder /backend/target/*.jar app.jar
 # Expose port 8080 (default, overridden dynamically in production by the PORT env variable)
