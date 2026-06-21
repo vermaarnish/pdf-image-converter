@@ -1,0 +1,12 @@
+# Render Blueprint configuration for automated deployment
+services:
+  - type: web
+    name: pdf-image-converter
+    env: docker
+    plan: free
+    # Specifies the Dockerfile at the root
+    dockerFilePath: Dockerfile
+    # Port will be dynamically injected by Render
+    envVars:
+      - key: PORT
+        value: 8080
